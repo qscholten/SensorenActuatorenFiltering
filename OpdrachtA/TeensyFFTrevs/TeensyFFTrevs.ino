@@ -28,7 +28,8 @@ void loop() {
   if (digitalRead(BUTTON1)) { // button (SW1) is pressed
     digitalWrite(LED, HIGH);
     // fill sample array
-    for (int t=0; t < FFT_SIZE; t++) {      // fill the samples array with a pure sinus
+    //for (int t=0; t < FFT_SIZE; t++) {      // fill the samples array with a pure sinus
+    for (int t=0; t < 256; t++) {
       //samples[2*t] = sin(t*0.2);  // real part
       samples[2*t] = (t%32 < 16 ?  1: -1);    // real part
       //samples[2*t] = (t%32)/16.0 -1;  // real part
