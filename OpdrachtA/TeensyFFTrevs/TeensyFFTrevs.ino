@@ -46,7 +46,7 @@ void loop() {
     //Calculating back from complex frequency Domain to time Domain.
     for (int t=0; t<FFT_SIZE; t++) timeDomain[t] = 0.0;
     for (int t=0; t<FFT_SIZE; t++) {
-      for (int f=0; f<FFT_SIZE; f++) {
+      for (int f=0; f<128; f++) {
         timeDomain[t] += samples[2*f]*cos(2*PI*t*f/FFT_SIZE)/FFT_SIZE - samples[2*f+1]*sin(2*PI*t*f/FFT_SIZE)/FFT_SIZE;
       }
     }
@@ -61,7 +61,7 @@ void loop() {
       }
     }
     else {
-      for (int f = 1; f < FFT_SIZE/2; f++) { // print only first half, the others are imaginary
+      for (int f = 0; f < FFT_SIZE/2; f++) { // print only first half, the others are imaginary
         Serial.print(f);
         Serial.print("= ");
         Serial.println(freqDomain[f]);
