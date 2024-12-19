@@ -34,6 +34,14 @@ const int ANALOG_READ_AVERAGING = 16;  // Number of samples to average with each
 const int MAX_CHARS = 65;              // Max size of the input command buffer
 int BeginMicro = 0;
 int EindMicro = 0;
+const double dtmf_low[] = {697, 770, 852, 941};
+const double dtmf_high[] = {1209, 1336, 1477};
+const char dtmf_map[4][3] = {
+  {'1', '2', '3'},
+  {'4', '5', '6'},
+  {'7', '8', '9'},
+  {'*', '0', '#'}
+};
 
 IntervalTimer samplingTimer;
 float samples[FFT_SIZE * 2];
@@ -43,6 +51,7 @@ float freqDomain[FFT_SIZE];
 int sampleCounter;
 char commandBuffer[MAX_CHARS];
 void samplingBegin();
+
 void setup() {
   // Set up serial port.
   Serial.begin(38400);
@@ -64,85 +73,58 @@ void setup() {
 }
 
 void loop() {
-  if (digitalRead(BUTTON1)) {
-    digitalWrite(LED1, HIGH);
+      digitalWrite(LED1, HIGH);
     // Begin sampling audio
     sampleCounter = 0;
     samplingBegin();
-    while(sampleCounter < 512) delay(1);
+    while (sampleCounter < 512) delay(1);
     digitalWrite(LED1, LOW);
-    
+
     digitalWrite(LED2, HIGH);
-    //BeginMicro = micros();
-    for (int t=0; t<256; t++) timeDomainRaw[t]=samples[2*t]; // Copy the samples into TimeDomain as the FFT uses samples as output
-    //EindMicro = micros();
-    //Serial.print(BeginMicro); Serial.print("-"); Serial.print(EindMicro); Serial.print("="); Serial.println(EindMicro-BeginMicro);
+    for (int t = 0; t < 256; t++) timeDomainRaw[t] = samples[2 * t]; // Copy the samples into TimeDomain as the FFT uses samples as output;
     // Calculate FFT if a full sample is available.
     // Run FFT on sample data.
-    //BeginMicro = micros();
+//    startMicros = micros();
     arm_cfft_radix4_instance_f32 fft_inst;
     arm_cfft_radix4_init_f32(&fft_inst, FFT_SIZE, 0, 1);
     arm_cfft_radix4_f32(&fft_inst, samples);  // samples now contains the real and imaginairy part of the FFT
-    //EindMicro = micros();
-    //Serial.print(BeginMicro); Serial.print("-"); Serial.print(EindMicro); Serial.print("="); Serial.println(EindMicro-BeginMicro);
     // Calculate magnitude of complex numbers output by the FFT.
-    
-    //filter low-frequency noise
-    for (int i = 1; i < 50; i++) {
-      samples[i] = 0;
-    }
-    for (int i = 511; i < 511 - 50; i--) {
-      samples[i] = 0;
-    }
-    
     arm_cmplx_mag_f32(samples, freqDomain, FFT_SIZE);
-    digitalWrite(LED2, LOW);
 
-    delay(500);
-
-    //Calculating back from complex frequency Domain to time Domain.
-    //digitalWrite(LED3, HIGH);
-    //for (int t=0; t<FFT_SIZE; t++) timeDomainRev[t] = 0.0;
-    //for (int t=0; t<FFT_SIZE; t++) {
-    //  for (int f=30; f<FFT_SIZE-30; f++) {
-    //     
-    //    timeDomainRev[t] += samples[2*f]*cos(2*PI*t*f/FFT_SIZE)/FFT_SIZE - samples[2*f+1]*sin(2*PI*t*f/FFT_SIZE)/FFT_SIZE;
-    //  }
-    //}
-    //Calculating back from complex frequency Domain to time Domain usinf FFT.
-    digitalWrite(LED3, HIGH);
-    // Run RevFFT on sample data.
-    arm_cfft_radix4_init_f32(&fft_inst, FFT_SIZE, 1, 1);
-    arm_cfft_radix4_f32(&fft_inst, samples);  // samples now contains the real and imaginairy part of the FFT
-    // Calculate magnitude of complex numbers output by the FFT.
-    arm_cmplx_mag_f32(samples, timeDomainRev, FFT_SIZE);
-    for (int t=0;t<FFT_SIZE;t++) {
-        Serial.print(t); Serial.print("= ");  Serial.println(timeDomainRaw[t]); 
-    }
-    digitalWrite(LED3, LOW);
-  }
-
-  
-  if (digitalRead(BUTTON2)) {
-    if (digitalRead(SWITCH3)) {
-      if (digitalRead(SWITCH4)) {
-         for (int t = 1; t < 256; t++) { // print samples
-            Serial.print(t); Serial.print("= ");  Serial.println(timeDomainRaw[t]);
-         }
-      }
-      else {
-         for (int t = 1; t < 256; t++) { // print samples
-            Serial.print(t); Serial.print("= ");  Serial.println(timeDomainRev[t]);
-         }
+    double low_freq = 0; 
+    double high_freq = 0;
+    for (int i = 4; i < FFT_SIZE/2; i++) {
+      if (freqDomain[i] >= 6000) {
+        float freq = (float)i * ((float)SAMPLE_RATE_HZ/FFT_SIZE);
+        for (int j = 0; j < 4; j++) {
+          if (dtmf_low[j]-40<freq && freq<dtmf_low[j]+40) {
+            low_freq = dtmf_low[j];
+          }
+          if (dtmf_high[j]-40<freq && freq<dtmf_high[j]+40) {
+            high_freq = dtmf_high[j];
+          }
+        }
       }
     }
-    else {
-      for (int f = 1; f < 128; f++) { // print only first half, the others are imaginary
-      Serial.print(f); Serial.print("= ");  Serial.println(freqDomain[f]);
+
+    if (low_freq > 0 && high_freq > 0) {
+      int row = -1;
+      int col = -1;
+      for (int i = 0; i < 4; i++) {
+        if (low_freq == dtmf_low[i]) {
+          row = i;
+        }
+        if (high_freq == dtmf_high[i]) {
+          col = i;
+        }
+      }
+      if (row != -1 && col != -1) {
+        char toets = dtmf_map[row][col];
+        Serial.print("Toets gedetecteerd: ");
+        Serial.println(toets);
+        delay(200);
       }
     }
-    delay(500);
-  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////

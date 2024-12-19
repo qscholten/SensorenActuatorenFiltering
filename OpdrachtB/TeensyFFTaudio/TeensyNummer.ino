@@ -64,41 +64,33 @@ void setup() {
 }
 
 void loop() {
-  if (digitalRead(BUTTON1)) {
-    digitalWrite(LED1, HIGH);
-    // Begin sampling audio
-    sampleCounter = 0;
-    samplingBegin();
-    while(sampleCounter < 512) delay(1);
-    digitalWrite(LED1, LOW);
-    
-    digitalWrite(LED2, HIGH);
-    //BeginMicro = micros();
-    for (int t=0; t<256; t++) timeDomainRaw[t]=samples[2*t]; // Copy the samples into TimeDomain as the FFT uses samples as output
-    //EindMicro = micros();
-    //Serial.print(BeginMicro); Serial.print("-"); Serial.print(EindMicro); Serial.print("="); Serial.println(EindMicro-BeginMicro);
-    // Calculate FFT if a full sample is available.
-    // Run FFT on sample data.
-    //BeginMicro = micros();
-    arm_cfft_radix4_instance_f32 fft_inst;
-    arm_cfft_radix4_init_f32(&fft_inst, FFT_SIZE, 0, 1);
-    arm_cfft_radix4_f32(&fft_inst, samples);  // samples now contains the real and imaginairy part of the FFT
-    //EindMicro = micros();
-    //Serial.print(BeginMicro); Serial.print("-"); Serial.print(EindMicro); Serial.print("="); Serial.println(EindMicro-BeginMicro);
-    // Calculate magnitude of complex numbers output by the FFT.
-    
-    //filter low-frequency noise
-    for (int i = 1; i < 50; i++) {
-      samples[i] = 0;
-    }
-    for (int i = 511; i < 511 - 50; i--) {
-      samples[i] = 0;
-    }
-    
-    arm_cmplx_mag_f32(samples, freqDomain, FFT_SIZE);
-    digitalWrite(LED2, LOW);
+  digitalWrite(LED1, HIGH)
+  sampleCounter = 0;
+  samplingBegin();
+  while(sampleCounter < 512) delay(1);
+  digitalWrite(LED1, LOW);
 
-    delay(500);
+  digitalWrite(LED2, HIGH);
+  for (int t = 0; t < 256; t++) {
+    timeDomainRaw[t] = samples[2 * t];
+  }
+  arm_cfft_radix4_instance_f32 fft_inst;
+  arm_cfft_radix4_init_f32(&fft_inst, FFT_SIZE, 0, 1);
+  arm_cfft_radix4_init_f32(&fft_inst, FFT_SIZE, 0, 1);
+  arm_cfft_radix4_f32(&fft_inst, samples);  // samples now contains the real and imaginairy part of the FFT
+  // Calculate magnitude of complex numbers output by the FFT.
+    
+  //filter low-frequency noise
+  for (int i = 1; i < 50; i++) {
+    samples[i] = 0;
+  }
+  for (int i = 511; i < 511 - 50; i--) {
+    samples[i] = 0;
+  }
+    
+  arm_cmplx_mag_f32(samples, freqDomain, FFT_SIZE);
+  digitalWrite(LED2, LOW);  
+  delay(500);
 
     //Calculating back from complex frequency Domain to time Domain.
     //digitalWrite(LED3, HIGH);
@@ -120,29 +112,16 @@ void loop() {
         Serial.print(t); Serial.print("= ");  Serial.println(timeDomainRaw[t]); 
     }
     digitalWrite(LED3, LOW);
-  }
-
-  
-  if (digitalRead(BUTTON2)) {
-    if (digitalRead(SWITCH3)) {
-      if (digitalRead(SWITCH4)) {
-         for (int t = 1; t < 256; t++) { // print samples
-            Serial.print(t); Serial.print("= ");  Serial.println(timeDomainRaw[t]);
-         }
-      }
-      else {
-         for (int t = 1; t < 256; t++) { // print samples
-            Serial.print(t); Serial.print("= ");  Serial.println(timeDomainRev[t]);
-         }
+    int maxfreq = freqDomain[1];
+    int maxbin = 1;
+    for (int t = 1; t < 256; t++) {
+      if (freqDomain[t] > maxfreq) {
+        maxfreq = freqDomain[t];
+        maxbin = t;
       }
     }
-    else {
-      for (int f = 1; f < 128; f++) { // print only first half, the others are imaginary
-      Serial.print(f); Serial.print("= ");  Serial.println(freqDomain[f]);
-      }
-    }
+    Serial.print(maxbin);
     delay(500);
-  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
