@@ -43,7 +43,8 @@ void sample () {
     Ymin2 = Ymin1; Ymin1 = Ymin0;
     Xmin0 = 10.0*sin(TwoPi*f*i/10000);
     // Begin Digitale filter 
-    Ymin0 = (Xmin0 + 50*Ymin1 - 25*Ymin2)/26; 
+    //Ymin0 = (Xmin0 + 50*Ymin1 - 25*Ymin2)/26; 
+    Ymin0 = (Xmin0 - 1.7526 * Xmin1 + 1.0000 * Xmin2) * 0.9950 + 1.7351 * Ymin1 - 0.9801 * Ymin2;
     // Eind digitale filter
     X[i]=Xmin0;
     Y[i]=Ymin0; 

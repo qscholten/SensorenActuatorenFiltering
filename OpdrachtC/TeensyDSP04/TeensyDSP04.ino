@@ -9,6 +9,8 @@
 #define LED3 13
 #define LED4 14
 #define AUDIO_INPUT_PIN 23        // Input ADC pin for audio data. (A9)
+unsigned long BeginMicro = 0;
+unsigned long EindMicro = 0;
 
 IntervalTimer timer;
 void sample();
@@ -38,7 +40,10 @@ void sample () {
   Xmin0 = analogRead(AUDIO_INPUT_PIN);
   Ymin2 = Ymin1; Ymin1 = Ymin0;
   // Begin Digitale filter 
-  Ymin0 = Xmin0;
+  BeginMicro = micros();
+  Ymin0 = (Xmin0 - 1.7526 * Xmin1 + 1.0000 * Xmin2) * 0.9950 + 1.7351 * Ymin1 - 0.9801 * Ymin2;
+  EindMicro = micros();
+  //Serial.print(BeginMicro); Serial.print("-"); Serial.print(EindMicro); Serial.print("="); Serial.println(EindMicro-BeginMicro);
   // Eind digitale filter
   if (Ymin0 > Ymax) Ymax = Ymin0;
 }
